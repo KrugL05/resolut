@@ -1,4 +1,4 @@
-// api/submit-form.js
+
 // Vercel Serverless Function — аналог netlify/functions/submit-form.js
 // Папка api/ должна лежать в КОРНЕ репозитория (рядом с public/)
 
