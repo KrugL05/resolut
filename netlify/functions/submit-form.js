@@ -1,4 +1,5 @@
 // netlify/functions/submit-form.js
+// Только Telegram — Sheets теперь вызывается напрямую из браузера
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
