@@ -75,12 +75,12 @@
   }
 
   // ── Отправка в Google Sheets напрямую из браузера ─────────
-  // no-cors: ответ не читаем, но данные доходят — это нормально
+  // no-cors mode only allows text/plain — body is still JSON, Apps Script parses it fine
   function sendSheets(data) {
     return fetch(SHEETS_URL, {
       method:  'POST',
       mode:    'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body:    JSON.stringify(data),
     });
   }
