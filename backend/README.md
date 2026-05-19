@@ -31,7 +31,7 @@ Telegram   Google
 2. Отправьте команду: `/newbot`
 3. Придумайте имя: `Resolute Club Bot`
 4. Придумайте username: `resolute_club_bot`
-5. Скопируйте **Bot Token**: `7123456789:AAFxxxxxxxx`
+5. Скопируйте **Bot Token**: (формат: `цифры:буквы_и_цифры`)
 
 ### Шаг 2 — Получить Chat ID (куда приходят заявки)
 
@@ -53,8 +53,8 @@ Telegram   Google
 Откройте `public/js/form.js`, найдите `CONFIG`:
 ```js
 const CONFIG = {
-  TELEGRAM_BOT_TOKEN: '7123456789:AAFxxxxxxxx',
-  TELEGRAM_CHAT_ID:   '-100123456789',
+  TELEGRAM_BOT_TOKEN: '<ВАШ_ТОКЕН_ОТ_BOTFATHER>',
+  TELEGRAM_CHAT_ID:   '<ВАШ_CHAT_ID>',
   MODE: 'both',
 };
 ```
