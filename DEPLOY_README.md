@@ -85,9 +85,9 @@ resolute/
 
 | Key | Value |
 |-----|-------|
-| `TELEGRAM_BOT_TOKEN` | `7123456789:AAFxxxxxxxxx` (ваш токен от BotFather) |
-| `TELEGRAM_CHAT_ID` | `1054823888` (ваш Chat ID) |
-| `SHEETS_WEBHOOK_URL` | `https://script.google.com/macros/s/.../exec` (из шага 5) |
+| `TELEGRAM_BOT_TOKEN` | токен от BotFather (вставьте сюда) |
+| `TELEGRAM_CHAT_ID` | ваш Chat ID (вставьте сюда) |
+| `SHEETS_WEBHOOK_URL` | URL из Google Apps Script (вставьте сюда) |
 
 3. После добавления переменных: **Deploys → Trigger deploy → Deploy site**
    (нужно передеплоить, чтобы функция подхватила переменные)
@@ -208,20 +208,20 @@ pm2 startup
 2. Напишите: `/newbot`
 3. Введите название: `Resolute Club`
 4. Введите username: `resolute_club_bot` (должен быть уникальным)
-5. Скопируйте **токен**: `7123456789:AAFxxxxxxxxxxxxxx`
+5. Скопируйте **токен** (выглядит как: `цифры:буквы_и_цифры_35_символов`)
 
 ### Шаг 2 — Получить Chat ID
 
 1. Напишите своему боту любое сообщение (например: `привет`)
 2. Откройте в браузере (вставьте свой токен):
    ```
-   https://api.telegram.org/bot7123456789:AAFxxxx/getUpdates
+   https://api.telegram.org/bot<ВАШ_ТОКЕН>/getUpdates
    ```
 3. В ответе найдите:
    ```json
-   "chat": { "id": 1054823888 }
+   "chat": { "id": <числовой_ID> }
    ```
-4. Число `1054823888` — это ваш **Chat ID**
+4. Это число — ваш **Chat ID**
 
 > **Совет:** Создайте отдельную Telegram-группу «RESOLUTE Заявки»,
 > добавьте туда бота и сделайте его администратором.

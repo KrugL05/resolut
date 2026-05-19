@@ -3,9 +3,9 @@
 //
 // Настройка в Netlify Dashboard:
 // Site settings → Environment variables → Add variable:
-//   TELEGRAM_BOT_TOKEN = ваш_токен
-//   TELEGRAM_CHAT_ID   = 1054823888
-//   SHEETS_WEBHOOK_URL = https://script.google.com/...
+//   TELEGRAM_BOT_TOKEN = <токен от BotFather>
+//   TELEGRAM_CHAT_ID   = <ваш Chat ID>
+//   SHEETS_WEBHOOK_URL = <URL из Google Apps Script>
 
 exports.handler = async (event) => {
   // Только POST
