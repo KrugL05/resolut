@@ -60,34 +60,9 @@ exports.handler = async (event) => {
     results.telegram = 'skipped (no env vars)';
   }
 
-  // ── Google Sheets ─────────────────────────────────────────
-  if (process.env.SHEETS_WEBHOOK_URL) {
-    try {
-      const sheetsRes = await fetchWithTimeout(
-          process.env.SHEETS_WEBHOOK_URL,
-          {
-            method:   'POST',
-            redirect: 'follow',         // ← FIX: следуем за редиректом Apps Script
-            headers:  { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...data,
-              timestamp: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
-            }),
-          },
-          7000  // 7 секунд таймаут
-      );
-
-      results.sheets = sheetsRes.ok ? 'ok' : `error ${sheetsRes.status}`;
-    } catch (e) {
-      results.sheets = `error: ${e.message}`;
-    }
-  } else {
-    results.sheets = 'skipped (no SHEETS_WEBHOOK_URL)';
-  }
-
   console.log('Submit results:', JSON.stringify(results));
 
-  const success = results.telegram === 'ok' || results.sheets === 'ok';
+  const success = results.telegram === 'ok';
 
   return {
     statusCode: success ? 200 : 500,
