@@ -89,9 +89,9 @@
   function openMailto(data) {
     const subject = encodeURIComponent(`Заявка — ${data.childName}, ${data.childAge} лет`);
     const body = encodeURIComponent(
-        `Имя ребёнка: ${data.childName}\nВозраст: ${data.childAge} лет\n` +
-        `Имя родителя: ${data.parentName}\nТелефон: ${data.phone}\n` +
-        `Время: ${data.timeSlot || '—'}\nКомментарий: ${data.comment || '—'}`
+      `Имя ребёнка: ${data.childName}\nВозраст: ${data.childAge} лет\n` +
+      `Имя родителя: ${data.parentName}\nТелефон: ${data.phone}\n` +
+      `Время: ${data.timeSlot || '—'}\nКомментарий: ${data.comment || '—'}`
     );
     window.open(`mailto:resolute.cheer@gmail.com?subject=${subject}&body=${body}`);
   }
