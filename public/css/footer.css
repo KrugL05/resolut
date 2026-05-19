@@ -1,0 +1,115 @@
+/* ═══════════════════════════════════════
+   RESOLUTE — Footer
+   ═══════════════════════════════════════ */
+
+footer {
+  background: var(--navy-deep);
+  padding: 3.5rem 1.5rem 2rem;
+  border-top: 2px solid var(--red);
+}
+
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 560px) { .footer-top { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 860px) { .footer-top { grid-template-columns: 2fr 1fr 1fr; } }
+
+.footer-logo {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  margin-bottom: 1rem;
+}
+
+.footer-logo span { color: var(--red); }
+
+.footer-tagline {
+  font-size: 0.85rem;
+  color: var(--gray);
+  line-height: 1.75;
+  max-width: 280px;
+}
+
+.footer-col h4 {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-bottom: 1.1rem;
+}
+
+.footer-col a {
+  display: block;
+  color: rgba(255,255,255,0.65);
+  font-size: 0.85rem;
+  margin-bottom: 0.55rem;
+  transition: color var(--transition);
+}
+
+.footer-col a:hover { color: var(--red); }
+
+.footer-col p {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.footer-col p a {
+  display: inline;
+  margin-bottom: 0;
+}
+
+.footer-bottom {
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-copy {
+  font-size: 0.72rem;
+  color: var(--gray);
+  line-height: 1.5;
+}
+
+.social-links {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.social-link {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.social-link:hover {
+  background: var(--red);
+  color: var(--white);
+  border-color: var(--red);
+}

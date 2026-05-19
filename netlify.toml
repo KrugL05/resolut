@@ -1,0 +1,20 @@
+# netlify.toml — конфигурация Netlify
+# Файл кладётся в корень проекта (рядом с папкой public/)
+
+[build]
+  # Откуда брать готовый сайт
+  publish = "public"
+  # Где лежат serverless functions
+  functions = "netlify/functions"
+
+# Все запросы к /api/* проксируются в functions
+[[redirects]]
+  from = "/api/*"
+  to   = "/.netlify/functions/:splat"
+  status = 200
+
+# SPA fallback (на случай прямых ссылок)
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
