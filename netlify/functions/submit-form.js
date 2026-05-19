@@ -1,21 +1,9 @@
 // netlify/functions/submit-form.js
-// Токен хранится в переменных окружения Netlify — не в коде!
-//
-// Настройка в Netlify Dashboard:
-// Site settings → Environment variables → Add variable:
-//   TELEGRAM_BOT_TOKEN = <токен от BotFather>
-//   TELEGRAM_CHAT_ID   = <ваш Chat ID>
-//   SHEETS_WEBHOOK_URL = <URL из Google Apps Script>
 
 exports.handler = async (event) => {
-  // Только POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
-
-  // Rate limiting простой (по IP) — опционально
-  // Netlify не даёт встроенного, но 125k запросов/месяц бесплатно
-  // и спам через форму маловероятен
 
   let data;
   try {
@@ -24,7 +12,6 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  // Базовая валидация на сервере (не доверяем только фронту)
   const { childName, childAge, parentName, phone } = data;
   if (!childName || !parentName || !phone) {
     return {
@@ -33,63 +20,73 @@ exports.handler = async (event) => {
     };
   }
 
-  const results = { telegram: null, sheets: null };
-  const errors  = [];
+  const results = {};
 
-  // ── Отправка в Telegram ──────────────────
-  try {
-    const text = [
-      '🏅 <b>НОВАЯ ЗАЯВКА — RESOLUTE</b>',
-      '',
-      `👤 <b>Ребёнок:</b> ${escapeHtml(childName)}, ${Number(childAge)} лет`,
-      `👨‍👩‍👧 <b>Родитель:</b> ${escapeHtml(parentName)}`,
-      `📱 <b>Телефон:</b> ${escapeHtml(phone)}`,
-      data.timeSlot ? `⏰ <b>Время:</b> ${escapeHtml(data.timeSlot)}` : '',
-      data.comment  ? `💬 <b>Коммент:</b> ${escapeHtml(data.comment)}` : '',
-      '',
-      `🕐 ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
-    ].filter(Boolean).join('\n');
+  // ── Telegram ─────────────────────────────────────────────
+  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+    try {
+      const text = [
+        '🏅 <b>НОВАЯ ЗАЯВКА — RESOLUTE</b>',
+        '',
+        `👤 <b>Ребёнок:</b> ${esc(childName)}, ${Number(childAge)} лет`,
+        `👨‍👩‍👧 <b>Родитель:</b> ${esc(parentName)}`,
+        `📱 <b>Телефон:</b> ${esc(phone)}`,
+        data.timeSlot ? `⏰ <b>Время:</b> ${esc(data.timeSlot)}` : '',
+        data.comment  ? `💬 <b>Коммент:</b> ${esc(data.comment)}` : '',
+        '',
+        `🕐 ${new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}`,
+      ].filter(Boolean).join('\n');
 
-    const tgRes = await fetch(
-      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id:    process.env.TELEGRAM_CHAT_ID,
-          text,
-          parse_mode: 'HTML',
-        }),
-      }
-    );
+      const tgRes = await fetchWithTimeout(
+          `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id:    process.env.TELEGRAM_CHAT_ID,
+              text,
+              parse_mode: 'HTML',
+            }),
+          },
+          5000  // 5 секунд таймаут
+      );
 
-    results.telegram = tgRes.ok ? 'ok' : 'error';
-    if (!tgRes.ok) errors.push('telegram');
-  } catch (e) {
-    errors.push('telegram');
-    results.telegram = 'error';
+      results.telegram = tgRes.ok ? 'ok' : `error ${tgRes.status}`;
+    } catch (e) {
+      results.telegram = `error: ${e.message}`;
+    }
+  } else {
+    results.telegram = 'skipped (no env vars)';
   }
 
-  // ── Отправка в Google Sheets ─────────────
+  // ── Google Sheets ─────────────────────────────────────────
   if (process.env.SHEETS_WEBHOOK_URL) {
     try {
-      await fetch(process.env.SHEETS_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          timestamp: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
-        }),
-      });
-      results.sheets = 'ok';
+      const sheetsRes = await fetchWithTimeout(
+          process.env.SHEETS_WEBHOOK_URL,
+          {
+            method:   'POST',
+            redirect: 'follow',         // ← FIX: следуем за редиректом Apps Script
+            headers:  { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...data,
+              timestamp: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),
+            }),
+          },
+          7000  // 7 секунд таймаут
+      );
+
+      results.sheets = sheetsRes.ok ? 'ok' : `error ${sheetsRes.status}`;
     } catch (e) {
-      errors.push('sheets');
-      results.sheets = 'error';
+      results.sheets = `error: ${e.message}`;
     }
+  } else {
+    results.sheets = 'skipped (no SHEETS_WEBHOOK_URL)';
   }
 
-  // Успех если хотя бы Telegram прошёл
-  const success = results.telegram === 'ok';
+  console.log('Submit results:', JSON.stringify(results));
+
+  const success = results.telegram === 'ok' || results.sheets === 'ok';
 
   return {
     statusCode: success ? 200 : 500,
@@ -98,9 +95,26 @@ exports.handler = async (event) => {
   };
 };
 
-function escapeHtml(str) {
+// ── Helpers ───────────────────────────────────────────────────
+
+function esc(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+}
+
+// fetch с таймаутом через AbortController
+async function fetchWithTimeout(url, options, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error(`Timeout after ${ms}ms`);
+    throw e;
+  }
 }
