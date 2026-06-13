@@ -28,6 +28,9 @@
     'assets/images/gallery/photo18.jpg',
     'assets/images/gallery/photo19.jpg',
     'assets/images/gallery/photo20.jpg',
+    'assets/images/gallery/photo21.jpg',
+    'assets/images/gallery/photo22.jpg',
+    'assets/images/gallery/photo23.jpg',
   ];
 
   const galleryGrid  = document.getElementById('galleryGrid');

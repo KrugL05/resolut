@@ -1,21 +1,17 @@
 /* ═══════════════════════════════════════
    RESOLUTE — Form Submission
-   Telegram → через Netlify Function (токен скрыт)
-   Sheets   → напрямую из браузера (no-cors, работает надёжно)
+   Telegram + Email → через Vercel Serverless Function (api/submit-form.js)
    ═══════════════════════════════════════ */
 
 (function () {
   'use strict';
 
-  // Вставьте URL вашего Apps Script сюда
-  // (Apps Script → Развернуть → URL веб-приложения)
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwbS_W3coNhg_T7p2imcHNFIMkNuKAnVzDxpzpcFQMqVND_6odKopbOrGXfH4DEgG48Yg/exec';
-
-  const form        = document.getElementById('signupForm');
-  const submitBtn   = document.getElementById('submitBtn');
-  const btnText     = submitBtn.querySelector('.btn-text');
-  const btnLoading  = submitBtn.querySelector('.btn-loading');
-  const formSuccess = document.getElementById('formSuccess');
+  const form          = document.getElementById('signupForm');
+  const submitBtn     = document.getElementById('submitBtn');
+  const btnText       = submitBtn.querySelector('.btn-text');
+  const btnLoading    = submitBtn.querySelector('.btn-loading');
+  const formSuccess   = document.getElementById('formSuccess');
+  const formSendError = document.getElementById('formSendError');
 
   // ── Валидация ─────────────────────────────────────────────
   function validateField(id, errorId, check, message) {
@@ -63,37 +59,22 @@
     };
   }
 
-  // ── Отправка в Telegram через Netlify Function ────────────
+  // ── Отправка в Telegram через Vercel Function ────────────
   async function sendTelegram(data) {
     const res = await fetch('/api/submit-form', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(`Netlify function error: ${res.status}`);
+    if (!res.ok) throw new Error(`Vercel function error: ${res.status}`);
     return res.json();
   }
 
-  // ── Отправка в Google Sheets напрямую из браузера ─────────
-  // no-cors mode only allows text/plain — body is still JSON, Apps Script parses it fine
-  function sendSheets(data) {
-    return fetch(SHEETS_URL, {
-      method:  'POST',
-      mode:    'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body:    JSON.stringify(data),
-    });
-  }
-
-  // ── Mailto fallback ───────────────────────────────────────
-  function openMailto(data) {
-    const subject = encodeURIComponent(`Заявка — ${data.childName}, ${data.childAge} лет`);
-    const body = encodeURIComponent(
-      `Имя ребёнка: ${data.childName}\nВозраст: ${data.childAge} лет\n` +
-      `Имя родителя: ${data.parentName}\nТелефон: ${data.phone}\n` +
-      `Время: ${data.timeSlot || '—'}\nКомментарий: ${data.comment || '—'}`
-    );
-    window.open(`mailto:resolute.cheer@gmail.com?subject=${subject}&body=${body}`);
+  // ── Сброс состояния кнопки ───────────────────────────────
+  function resetButton() {
+    submitBtn.disabled = false;
+    btnText.hidden     = false;
+    btnLoading.hidden  = true;
   }
 
   // ── Submit ────────────────────────────────────────────────
@@ -106,32 +87,25 @@
       return;
     }
 
-    submitBtn.disabled = true;
-    btnText.hidden     = true;
-    btnLoading.hidden  = false;
+    submitBtn.disabled       = true;
+    btnText.hidden           = true;
+    btnLoading.hidden        = false;
+    formSendError.hidden     = true;
 
     const data = getFormData();
 
     try {
-      // Отправляем оба запроса параллельно
-      await Promise.all([
-        sendTelegram(data),
-        sendSheets(data),   // no-cors — ошибку не поймаем, но данные придут
-      ]);
+      await sendTelegram(data);
 
-      // Показываем экран успеха
       form.hidden = true;
       formSuccess.removeAttribute('hidden');
       formSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     } catch (err) {
       console.error('Submit error:', err);
-
-      // Даже если Telegram упал — Sheets мог записать. Показываем успех.
-      // Если хотите строгую проверку — замените на alert + повтор.
-      form.hidden = true;
-      formSuccess.removeAttribute('hidden');
-      formSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      resetButton();
+      formSendError.hidden = false;
+      formSendError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   });
 
