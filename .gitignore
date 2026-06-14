@@ -1,2 +1,5 @@
 .idea/
 SUMMARY.txt
+node_modules/
+.env
+npm-debug.log*

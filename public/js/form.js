@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════
    RESOLUTE — Form Submission
-   Telegram + Email → через Vercel Serverless Function (api/submit-form.js)
+   Telegram + Email → через VPS API (api/submit-form.js за Nginx-прокси)
    ═══════════════════════════════════════ */
 
 (function () {
@@ -59,14 +59,14 @@
     };
   }
 
-  // ── Отправка в Telegram через Vercel Function ────────────
+  // ── Отправка заявки на API ───────────────────────────────
   async function sendTelegram(data) {
     const res = await fetch('/api/submit-form', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(`Vercel function error: ${res.status}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.json();
   }
 
