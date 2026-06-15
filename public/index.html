@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/hero.css">
+  <link rel="stylesheet" href="css/articles.css">
   <link rel="stylesheet" href="css/sections.css">
   <link rel="stylesheet" href="css/gallery.css">
   <link rel="stylesheet" href="css/form.css">
@@ -35,6 +36,7 @@
     </a>
 
     <ul class="nav-links" role="navigation" aria-label="Основное меню">
+      <li><a href="#articles">Новости</a></li>
       <li><a href="#about">О клубе</a></li>
       <li><a href="#achievements">Достижения</a></li>
       <li><a href="#coaches">Тренеры</a></li>
@@ -50,6 +52,7 @@
 </nav>
 
 <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <a href="#articles">Новости</a>
   <a href="#about">О клубе</a>
   <a href="#achievements">Достижения</a>
   <a href="#coaches">Тренеры</a>
@@ -98,6 +101,23 @@
   <div class="scroll-hint" aria-hidden="true">
     <span>Листать</span>
     <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ ARTICLES ═══════════════════════ -->
+<section id="articles" class="section-dark">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">Новости</div>
+      <h2 class="section-title">Новости<br><em>клуба</em></h2>
+      <div class="divider"></div>
+
+      <div class="articles-carousel">
+        <button class="articles-nav articles-prev" id="articlesPrev" aria-label="Предыдущая статья">‹</button>
+        <div class="articles-track" id="articlesTrack"></div>
+        <button class="articles-nav articles-next" id="articlesNext" aria-label="Следующая статья">›</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -448,6 +468,18 @@
   </div>
 </footer>
 
+<!-- ═══════════════════════ ARTICLE MODAL ═══════════════════════ -->
+<div class="article-modal" id="articleModal" role="dialog" aria-modal="true" aria-label="Статья" hidden>
+  <button class="article-modal-close" id="articleModalClose" aria-label="Закрыть">✕</button>
+  <div class="article-modal-card">
+    <img class="article-modal-img" id="articleModalImg" src="" alt="">
+    <div class="article-modal-text">
+      <h2 class="article-modal-title" id="articleModalTitle"></h2>
+      <div class="article-modal-body" id="articleModalBody"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════════ LIGHTBOX ═══════════════════════ -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Просмотр фото" hidden>
   <button class="lightbox-close" id="lightboxClose" aria-label="Закрыть">✕</button>
@@ -458,6 +490,7 @@
 
 <!-- Scripts -->
 <script src="js/nav.js"></script>
+<script src="js/articles.js"></script>
 <script src="js/gallery.js"></script>
 <script src="js/form.js"></script>
 <script src="js/animations.js"></script>

@@ -75,7 +75,8 @@ cd /var/www/resolute
   --dir=./pocketbase/pb_data
 ```
 
-Коллекция `gallery` создастся автоматически при первом запуске (из `pb_migrations`).
+Коллекции `gallery` и `articles` создадутся автоматически при первом запуске
+(из `pb_migrations`).
 
 ## 5. Запуск под PM2 (Express + PocketBase)
 
