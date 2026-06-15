@@ -1,14 +1,22 @@
 # Деплой RESOLUTE на VPS (Beget / Timeweb)
 
-Проект — статический сайт (`public/`) + Node-API (`/api/submit-form`, отправка
-заявки в Telegram и на email). На VPS статику раздаёт **Nginx**, API крутится в
-**Node (Express)** под **PM2**, Nginx проксирует на него `/api/`.
+Проект состоит из трёх частей:
+- статический сайт (`public/`) — раздаёт **Nginx**;
+- Node-API (`/api/submit-form`, заявка в Telegram/email) — **Express** под **PM2**;
+- **PocketBase** — хранилище галереи (и в будущем статей) + админка, в которой
+  заказчик сам управляет контентом. Тоже под **PM2**.
+
+Nginx проксирует: `/api/submit-form` → Express, остальной `/api/` и `/_/` →
+PocketBase. Подробнее — в `deploy/nginx.conf`.
 
 ## Что лежит в репозитории
 - `server.js` — Express-сервер (API + fallback-раздача статики)
-- `ecosystem.config.cjs` — конфиг PM2
+- `ecosystem.config.cjs` — конфиг PM2 (Express + PocketBase)
 - `deploy/nginx.conf` — пример конфига Nginx
 - `.env.example` — шаблон секретов (Telegram / SMTP)
+- `pocketbase/pb_migrations/` — схема коллекций PocketBase (применяется автоматически).
+  Сам бинарник PocketBase и данные (`pb_data`) в git **не** хранятся — скачиваются
+  и наполняются на сервере.
 
 ---
 
@@ -46,17 +54,40 @@ nano .env   # вставить реальные TELEGRAM_BOT_TOKEN, TELEGRAM_CHA
 ```
 Значения берутся из настроек проекта на Vercel (Environment Variables).
 
-## 4. Запуск под PM2
+## 4. PocketBase (галерея / контент)
+
+Скачать бинарник под Linux в папку `pocketbase/` (рядом уже лежат миграции схемы):
+
+```bash
+cd /var/www/resolute/pocketbase
+PB_VER=0.39.4
+curl -L -o pb.zip https://github.com/pocketbase/pocketbase/releases/download/v${PB_VER}/pocketbase_${PB_VER}_linux_amd64.zip
+unzip -o pb.zip pocketbase && rm pb.zip
+chmod +x pocketbase
+cd /var/www/resolute
+```
+
+Создать админ-аккаунт (под ним заказчик заходит в админку — выдайте ему эти данные):
 
 ```bash
 cd /var/www/resolute
-pm2 start ecosystem.config.cjs
+./pocketbase/pocketbase superuser create ВАШ_EMAIL 'НАДЁЖНЫЙ_ПАРОЛЬ' \
+  --dir=./pocketbase/pb_data
+```
+
+Коллекция `gallery` создастся автоматически при первом запуске (из `pb_migrations`).
+
+## 5. Запуск под PM2 (Express + PocketBase)
+
+```bash
+cd /var/www/resolute
+pm2 start ecosystem.config.cjs   # поднимет оба процесса: resolute + pocketbase
 pm2 save
 pm2 startup        # выполнить выведенную команду — автозапуск после ребута
 pm2 status
 ```
 
-## 5. Nginx
+## 6. Nginx
 
 ```bash
 cp deploy/nginx.conf /etc/nginx/sites-available/resolute
@@ -66,18 +97,26 @@ nginx -t
 systemctl reload nginx
 ```
 
-## 6. Проверка
+## 7. Проверка
 
 ```bash
-# API напрямую
+# Форма заявки → Express
 curl -X POST http://127.0.0.1:3000/api/submit-form \
   -H "Content-Type: application/json" \
   -d '{"childName":"Тест","childAge":"10","parentName":"Родитель","phone":"+79991234567"}'
-```
-Затем открыть `http://<IP_СЕРВЕРА>/` в браузере и отправить форму — заявка должна
-прийти в Telegram.
 
-## 7. SSL (когда появится домен)
+# Галерея → PocketBase (должен вернуть JSON со списком, даже пустым)
+curl http://127.0.0.1:8090/api/collections/gallery/records
+```
+Затем открыть в браузере:
+- `http://<IP_СЕРВЕРА>/` — сайт грузится, форма отправляется (приходит в Telegram);
+- `http://<IP_СЕРВЕРА>/_/` — админка PocketBase (вход под созданным аккаунтом),
+  загрузить фото в коллекцию `gallery` → они появятся в галерее на сайте.
+
+> ⚠️ Админка PocketBase отдаёт логин/пароль по сети — заходить в неё стоит уже по
+> HTTPS (см. шаг 8). До выпуска SSL пользуйтесь ей аккуратно.
+
+## 8. SSL (когда появится домен)
 
 ```bash
 # направить A-запись домена на IP, затем:
@@ -95,5 +134,15 @@ Certbot сам пропишет 443 и редирект, настроит авт
 cd /var/www/resolute
 git pull
 npm install --omit=dev
-pm2 restart resolute
+pm2 restart resolute      # перезапустить сайт/API
+# при изменении схемы PocketBase (новые миграции): pm2 restart pocketbase
+```
+
+## Бэкап контента
+
+Все фото и данные галереи лежат в `pocketbase/pb_data/`. Для резервной копии
+достаточно сохранить эту папку:
+
+```bash
+tar czf pb_backup_$(date +%F).tar.gz -C /var/www/resolute pocketbase/pb_data
 ```

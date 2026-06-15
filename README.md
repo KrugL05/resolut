@@ -107,6 +107,22 @@ npm start                 # node server.js → http://localhost:3000
 > Для быстрого просмотра вёрстки без API можно просто открыть `public/index.html`
 > в браузере, но тогда отправка формы работать не будет.
 
+### Галерея (PocketBase) локально
+
+Фото галереи хранятся в PocketBase. Чтобы тестировать галерею с реальными
+данными, поднимите его рядом (бинарник скачивается в `pocketbase/`, в git не
+коммитится):
+
+```bash
+cd pocketbase
+./pocketbase serve --http=127.0.0.1:8090   # на Windows: pocketbase.exe
+```
+
+Админка — http://127.0.0.1:8090/_/, коллекция `gallery` создастся из миграций
+автоматически. Если PocketBase **не** запущен — галерея показывает статичные фото
+из `FALLBACK_PHOTOS` в [public/js/gallery.js](public/js/gallery.js) (тот же
+механизм работает и на демо GitHub Pages).
+
 ---
 
 ## Переменные окружения

@@ -19,5 +19,18 @@ module.exports = {
                 HOST: '127.0.0.1',
             },
         },
+        {
+            // PocketBase — хранилище галереи/статей + админка для заказчика.
+            // Бинарник скачивается на сервере в ./pocketbase/ (в git не коммитится),
+            // схема коллекций берётся из ./pocketbase/pb_migrations (в git есть).
+            name: 'pocketbase',
+            script: './pocketbase/pocketbase',
+            args: 'serve --http=127.0.0.1:8090 --dir=./pocketbase/pb_data --migrationsDir=./pocketbase/pb_migrations',
+            interpreter: 'none',
+            instances: 1,
+            exec_mode: 'fork',
+            autorestart: true,
+            max_memory_restart: '200M',
+        },
     ],
 };

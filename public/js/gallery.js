@@ -1,81 +1,94 @@
 /* ═══════════════════════════════════════
    RESOLUTE — Gallery & Lightbox
+   Фото подгружаются из PocketBase (заказчик управляет ими сам через админку).
+   Если PocketBase недоступен (демо на GitHub Pages / нет сети) —
+   показываются статичные фото из FALLBACK_PHOTOS.
    ═══════════════════════════════════════ */
 
 (function () {
   'use strict';
 
-  // ── Photo list ────────────────────────────
-  // Add or remove filenames here to manage gallery
-  const GALLERY_PHOTOS = [
-    'assets/images/gallery/photo1.jpg',
-    'assets/images/gallery/photo2.jpg',
-    'assets/images/gallery/photo3.jpg',
-    'assets/images/gallery/photo4.jpg',
-    'assets/images/gallery/photo5.jpg',
-    'assets/images/gallery/photo6.jpg',
-    'assets/images/gallery/photo7.jpg',
-    'assets/images/gallery/photo8.jpg',
-    'assets/images/gallery/photo9.jpg',
-    'assets/images/gallery/photo10.jpg',
-    'assets/images/gallery/photo11.jpg',
-    'assets/images/gallery/photo12.jpg',
-    'assets/images/gallery/photo13.jpg',
-    'assets/images/gallery/photo14.jpg',
-    'assets/images/gallery/photo15.jpg',
-    'assets/images/gallery/photo16.jpg',
-    'assets/images/gallery/photo17.jpg',
-    'assets/images/gallery/photo18.jpg',
-    'assets/images/gallery/photo19.jpg',
-    'assets/images/gallery/photo20.jpg',
-    'assets/images/gallery/photo21.jpg',
-    'assets/images/gallery/photo22.jpg',
-    'assets/images/gallery/photo23.jpg',
-  ];
+  // ── Адрес PocketBase ──────────────────────
+  // В проде сайт и PocketBase на одном домене (Nginx проксирует /api/ → PocketBase),
+  // поэтому база пустая (запросы относительные). Локально PocketBase на :8090.
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const PB_URL  = (isLocal && location.port !== '8090') ? 'http://127.0.0.1:8090' : '';
 
-  const galleryGrid  = document.getElementById('galleryGrid');
-  const lightbox     = document.getElementById('lightbox');
-  const lightboxImg  = document.getElementById('lightboxImg');
+  // ── Фолбэк-список (демо / нет PocketBase) ──
+  const FALLBACK_PHOTOS = Array.from({ length: 23 }, (_, i) =>
+    `assets/images/gallery/photo${i + 1}.jpg`
+  );
+
+  const galleryGrid   = document.getElementById('galleryGrid');
+  const lightbox      = document.getElementById('lightbox');
+  const lightboxImg   = document.getElementById('lightboxImg');
   const lightboxClose = document.getElementById('lightboxClose');
-  const lightboxPrev = document.getElementById('lightboxPrev');
-  const lightboxNext = document.getElementById('lightboxNext');
+  const lightboxPrev  = document.getElementById('lightboxPrev');
+  const lightboxNext  = document.getElementById('lightboxNext');
 
+  let photos    = [];   // [{ full, thumb, caption }]
   let currentIdx = 0;
 
-  // ── Build gallery grid ────────────────────
-  GALLERY_PHOTOS.forEach((src, i) => {
-    const item = document.createElement('div');
-    item.className = 'gallery-item';
-    item.setAttribute('role', 'button');
-    item.setAttribute('tabindex', '0');
-    item.setAttribute('aria-label', `Фото ${i + 1}`);
+  // ── Загрузка списка фото ──────────────────
+  async function loadPhotos() {
+    try {
+      const res = await fetch(`${PB_URL}/api/collections/gallery/records?sort=sort,created&perPage=200`);
+      if (!res.ok) throw new Error(`PocketBase ${res.status}`);
+      const data = await res.json();
+      if (!data.items || !data.items.length) throw new Error('PocketBase: нет фото');
 
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = `Клуб Resolute — фото ${i + 1}`;
-    img.loading = 'lazy';
-    img.decoding = 'async';
+      return data.items.map(r => {
+        const base = `${PB_URL}/api/files/${r.collectionId}/${r.id}/${encodeURIComponent(r.image)}`;
+        return {
+          full:    base,
+          thumb:   `${base}?thumb=800x0`,
+          caption: r.caption || '',
+        };
+      });
+    } catch (e) {
+      console.warn('[gallery] Использую статичные фото:', e.message);
+      return FALLBACK_PHOTOS.map(src => ({ full: src, thumb: src, caption: '' }));
+    }
+  }
 
-    const overlay = document.createElement('div');
-    overlay.className = 'gallery-overlay';
-    overlay.innerHTML = '<div class="gallery-overlay-icon">⊕</div>';
+  // ── Построение сетки ──────────────────────
+  function buildGrid() {
+    galleryGrid.innerHTML = '';
 
-    item.appendChild(img);
-    item.appendChild(overlay);
+    photos.forEach((photo, i) => {
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.setAttribute('role', 'button');
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('aria-label', photo.caption || `Фото ${i + 1}`);
 
-    item.addEventListener('click', () => openLightbox(i));
-    item.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') openLightbox(i);
+      const img = document.createElement('img');
+      img.src = photo.thumb;
+      img.alt = photo.caption || `Клуб Resolute — фото ${i + 1}`;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+
+      const overlay = document.createElement('div');
+      overlay.className = 'gallery-overlay';
+      overlay.innerHTML = '<div class="gallery-overlay-icon">⊕</div>';
+
+      item.appendChild(img);
+      item.appendChild(overlay);
+
+      item.addEventListener('click', () => openLightbox(i));
+      item.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') openLightbox(i);
+      });
+
+      galleryGrid.appendChild(item);
     });
-
-    galleryGrid.appendChild(item);
-  });
+  }
 
   // ── Lightbox ──────────────────────────────
   function openLightbox(idx) {
     currentIdx = idx;
-    lightboxImg.src = GALLERY_PHOTOS[idx];
-    lightboxImg.alt = `Фото ${idx + 1} из ${GALLERY_PHOTOS.length}`;
+    lightboxImg.src = photos[idx].full;
+    lightboxImg.alt = `Фото ${idx + 1} из ${photos.length}`;
     lightbox.removeAttribute('hidden');
     document.body.style.overflow = 'hidden';
     lightboxClose.focus();
@@ -89,10 +102,11 @@
   }
 
   function navigate(dir) {
-    currentIdx = (currentIdx + dir + GALLERY_PHOTOS.length) % GALLERY_PHOTOS.length;
+    if (!photos.length) return;
+    currentIdx = (currentIdx + dir + photos.length) % photos.length;
     lightboxImg.style.opacity = '0';
     setTimeout(() => {
-      lightboxImg.src = GALLERY_PHOTOS[currentIdx];
+      lightboxImg.src = photos[currentIdx].full;
       lightboxImg.style.opacity = '1';
       updateCounter();
     }, 150);
@@ -105,7 +119,7 @@
       counter.className = 'lightbox-counter';
       lightbox.appendChild(counter);
     }
-    counter.textContent = `${currentIdx + 1} / ${GALLERY_PHOTOS.length}`;
+    counter.textContent = `${currentIdx + 1} / ${photos.length}`;
   }
 
   lightboxClose.addEventListener('click', closeLightbox);
@@ -131,5 +145,11 @@
   lightbox.addEventListener('touchend', e => {
     const diff = touchStartX - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
+  });
+
+  // ── Старт ─────────────────────────────────
+  loadPhotos().then(list => {
+    photos = list;
+    buildGrid();
   });
 })();

@@ -1,5 +1,8 @@
 .idea/
-SUMMARY.txt
 node_modules/
 .env
 npm-debug.log*
+
+# PocketBase: бинарник и данные/загрузки не коммитим, миграции (схему) — коммитим
+/pocketbase/*
+!/pocketbase/pb_migrations/
