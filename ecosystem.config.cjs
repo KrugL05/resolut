@@ -10,9 +10,11 @@ module.exports = {
             exec_mode: 'fork',
             autorestart: true,
             max_memory_restart: '200M',
-            // Node 20+ сам читает .env через --env-file; для совместимости
-            // оставляем только PORT здесь, остальное — из .env.
-            node_args: '--env-file=.env',
+            // --env-file: читаем секреты из .env (Telegram/SMTP).
+            // --dns-result-order=ipv4first: на РФ-серверах (напр. Beget) у
+            // api.telegram.org часто есть только IPv6-маршрут, который не
+            // работает → fetch падает. Принудительно ходим по IPv4.
+            node_args: '--env-file=.env --dns-result-order=ipv4first',
             env: {
                 NODE_ENV: 'production',
                 PORT: 3000,
