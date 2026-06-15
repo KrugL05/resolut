@@ -27,7 +27,12 @@
 <!-- ═══════════════════════ NAVIGATION ═══════════════════════ -->
 <nav id="navbar">
   <div class="nav-inner">
-    <a href="#top" class="nav-logo">RESOL<span>UTE</span></a>
+    <a href="#top" class="nav-logo" aria-label="Resolute — на главную">
+      <picture>
+        <source srcset="assets/images/logo-eagle.webp" type="image/webp">
+        <img src="assets/images/logo-eagle.png" alt="Логотип Resolute" class="nav-logo-img">
+      </picture>
+    </a>
 
     <ul class="nav-links" role="navigation" aria-label="Основное меню">
       <li><a href="#about">О клубе</a></li>
@@ -61,10 +66,6 @@
   <div class="hero-overlay"></div>
 
   <div class="hero-content">
-    <picture>
-      <source srcset="assets/images/logo-eagle.webp" type="image/webp">
-      <img src="assets/images/logo-eagle.png" alt="Логотип Resolute Cheerleading Team" class="hero-logo">
-    </picture>
     <div class="hero-badge">Г.О. Люберцы · Московская область</div>
     <h1 class="hero-title">
       КЛУБ<br>
@@ -245,6 +246,20 @@
             </ul>
           </div>
         </div>
+
+        <div class="coach-card">
+          <div class="coach-photo">
+            <img src="assets/images/coaches/coach3.jpg" alt="Зубкова Анастасия Игоревна" loading="lazy">
+          </div>
+          <div class="coach-info">
+            <div class="coach-role">Тренер СК «РЕЗОЛЮТ»</div>
+            <div class="coach-name">Зубкова Анастасия Игоревна</div>
+            <ul class="coach-creds">
+              <li>Кандидат в Мастера спорта по чирлидингу</li>
+              <li>Призёр Всероссийских соревнований</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -327,10 +342,6 @@
         <div class="signup-photo">
           <img src="assets/images/team-trial.jpg" alt="Команда Resolute" loading="lazy">
           <div class="signup-photo-caption">
-            <picture>
-              <source srcset="assets/images/logo-eagle.webp" type="image/webp">
-              <img src="assets/images/logo-eagle.png" alt="Resolute" class="signup-photo-logo">
-            </picture>
             <span>Присоединяйся к команде чемпионов!</span>
           </div>
         </div>
@@ -404,10 +415,6 @@
     <div class="footer-top">
       <div class="footer-brand">
         <div class="footer-logo">
-          <picture>
-            <source srcset="assets/images/logo-eagle.webp" type="image/webp">
-            <img src="assets/images/logo-eagle.png" alt="Resolute" class="footer-logo-img">
-          </picture>
           <span class="footer-logo-text">RESOL<span>UTE</span></span>
         </div>
         <p class="footer-tagline">
@@ -437,11 +444,6 @@
     </div>
     <div class="footer-bottom">
       <p class="footer-copy">© 2025 Клуб спортивного чирлидинга «РЕЗОЛЮТ». Все права защищены.</p>
-      <div class="social-links">
-        <a href="https://vk.com/cheer_resolute" class="social-link" aria-label="ВКонтакте" target="_blank" rel="noopener">ВК</a>
-        <a href="https://t.me/cheer_resolute" class="social-link" aria-label="Telegram" target="_blank" rel="noopener">TG</a>
-        <a href="https://www.instagram.com/cheer_resolute?igsh=dW5mNW83cWZzY2c4" class="social-link" aria-label="Instagram" target="_blank" rel="noopener">IG</a>
-      </div>
     </div>
   </div>
 </footer>

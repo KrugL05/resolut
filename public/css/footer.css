@@ -34,11 +34,7 @@ footer {
   margin-bottom: 1rem;
 }
 
-.footer-logo-img {
-  height: 52px;
-  width: auto;
-}
-
+.footer-logo-text { color: var(--white); }
 .footer-logo-text span { color: var(--red); }
 
 .footer-logo span { color: var(--red); }
@@ -95,31 +91,4 @@ footer {
   font-size: 0.72rem;
   color: var(--gray);
   line-height: 1.5;
-}
-
-.social-links {
-  display: flex;
-  gap: 0.6rem;
-}
-
-.social-link {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--gray);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-}
-
-.social-link:hover {
-  background: var(--red);
-  color: var(--white);
-  border-color: var(--red);
 }

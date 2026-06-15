@@ -57,13 +57,6 @@
   width: 100%;
 }
 
-.hero-logo {
-  width: clamp(140px, 32vw, 240px);
-  height: auto;
-  margin: 0 auto 1.5rem;
-  display: block;
-}
-
 .hero-badge {
   display: inline-block;
   background: var(--red);

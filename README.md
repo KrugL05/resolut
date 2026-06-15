@@ -1,13 +1,18 @@
 # RESOLUTE — Клуб Спортивного Чирлидинга
 ### Сайт-визитка с формой заявок
 
+Статический сайт (vanilla JS, без сборки) + лёгкий Node-API для приёма заявок
+(Telegram + email). Развёрнут на **VPS** под Nginx + Node (Express) + PM2.
+
+> 📘 Пошаговая инструкция по развёртыванию на сервере — в [DEPLOY.md](DEPLOY.md).
+
 ---
 
 ## Структура проекта
 
 ```
 resolute/
-├── public/                        ← Веб-корень (Vercel отдаёт отсюда)
+├── public/                        ← Веб-корень (Nginx отдаёт статику отсюда)
 │   ├── index.html                 ← Единственная страница (SPA)
 │   ├── css/
 │   │   ├── variables.css          ← Цвета, шрифты, токены
@@ -21,7 +26,7 @@ resolute/
 │   ├── js/
 │   │   ├── nav.js                 ← Бургер, скролл, активный пункт меню
 │   │   ├── gallery.js             ← Генерация галереи, лайтбокс, свайп
-│   │   ├── form.js                ← Валидация и отправка заявки в Telegram
+│   │   ├── form.js                ← Валидация и отправка заявки на /api
 │   │   └── animations.js          ← Появление элементов при скролле
 │   └── assets/
 │       └── images/
@@ -30,11 +35,41 @@ resolute/
 │           └── gallery/           ← photo1.jpg … photo23.jpg
 │
 ├── api/
-│   └── submit-form.js             ← Vercel Serverless Function: отправка в Telegram
+│   └── submit-form.js             ← Обработчик заявки: Telegram + email (nodemailer)
 │
-├── vercel.json                    ← Роутинг: всё из public/, /api/* — функции
+├── server.js                      ← Express-сервер: монтирует /api/submit-form + раздаёт статику
+├── ecosystem.config.cjs           ← Конфиг PM2 (постоянный Node-процесс)
+├── deploy/
+│   └── nginx.conf                 ← Пример конфига Nginx (статика + прокси /api/)
+├── .env.example                   ← Шаблон переменных окружения (секреты)
+├── DEPLOY.md                      ← Инструкция по деплою на VPS
 └── README.md                      ← Этот файл
 ```
+
+---
+
+## Архитектура на VPS
+
+```
+                 ┌──────────────────────────────┐
+   Браузер  ───▶ │            Nginx :80          │
+                 │  • статика из public/         │
+                 │  • SPA-fallback → index.html  │
+                 └──────────────┬───────────────┘
+                                │  /api/*  (proxy_pass)
+                                ▼
+                 ┌──────────────────────────────┐
+                 │   Node + Express  :3000       │  ← под управлением PM2
+                 │     server.js → api/submit-form.js
+                 └──────────────┬───────────────┘
+                                ▼
+                     Telegram Bot API  +  SMTP (nodemailer)
+```
+
+- **Nginx** раздаёт статику напрямую и проксирует только `/api/*` на Node.
+- **Express** (`server.js`) переиспользует обработчик `api/submit-form.js`.
+- **PM2** держит Node-процесс живым и поднимает его после перезагрузки сервера.
+- Секреты (Telegram/SMTP) лежат в `.env` на сервере — не в коде и не в репозитории.
 
 ---
 
@@ -47,15 +82,50 @@ resolute/
    public/js/form.js
          │
          ▼
-   POST /api/submit-form
-  (Vercel Serverless Function)
+   POST /api/submit-form   ──(Nginx proxy)──▶  Node/Express → api/submit-form.js
          │
-         ▼
-   Telegram Bot API
-  (уведомление администратору)
+         ├──▶ Telegram Bot API  (мгновенное уведомление администратору)
+         └──▶ SMTP / nodemailer (письмо на корпоративную почту, опционально)
 ```
 
-Токены Telegram хранятся в переменных окружения Vercel — не в коде фронтенда.
+Токены Telegram и SMTP хранятся в переменных окружения сервера (`.env`) —
+не в коде фронтенда.
+
+---
+
+## Локальная разработка
+
+Зависимости и запуск:
+```bash
+npm install
+cp .env.example .env      # заполнить TELEGRAM_* (и при желании EMAIL_*)
+npm start                 # node server.js → http://localhost:3000
+```
+`server.js` сам раздаёт статику из `public/` и обслуживает `/api/submit-form`,
+так что форму можно тестировать локально без Nginx.
+
+> Для быстрого просмотра вёрстки без API можно просто открыть `public/index.html`
+> в браузере, но тогда отправка формы работать не будет.
+
+---
+
+## Переменные окружения
+
+Все переменные читает обработчик `api/submit-form.js`. Шаблон — в [.env.example](.env.example).
+
+| Переменная | Пример | Описание |
+|---|---|---|
+| `PORT` | `3000` | Порт Node-сервера (Nginx проксирует сюда) |
+| `TELEGRAM_BOT_TOKEN` | `123456:ABC...` | Токен бота от BotFather |
+| `TELEGRAM_CHAT_ID` | `-100123456789` | Куда приходят заявки |
+| `EMAIL_HOST` | `smtp.mail.ru` | SMTP-сервер (опционально) |
+| `EMAIL_PORT` | `587` | Порт (587 = STARTTLS) |
+| `EMAIL_USER` | `info@resolute-club.ru` | Логин/адрес отправителя |
+| `EMAIL_PASS` | `••••••••` | Пароль или app-password |
+| `EMAIL_TO` | `info@resolute-club.ru` | Получатель писем |
+
+Если `EMAIL_*` не заданы — отправка email молча пропускается, Telegram работает
+в штатном режиме.
 
 ---
 
@@ -76,13 +146,12 @@ resolute/
 
 Для группы/канала: добавьте бота, сделайте его администратором — Chat ID будет отрицательным.
 
-### Шаг 3 — Прописать переменные окружения в Vercel
-В панели Vercel → Settings → Environment Variables:
-
-| Переменная | Значение |
-|---|---|
-| `TELEGRAM_BOT_TOKEN` | токен от BotFather |
-| `TELEGRAM_CHAT_ID` | chat_id куда приходят заявки |
+### Шаг 3 — Прописать в `.env` на сервере
+```
+TELEGRAM_BOT_TOKEN=токен_от_BotFather
+TELEGRAM_CHAT_ID=chat_id_куда_приходят_заявки
+```
+После изменения `.env`: `pm2 restart resolute`.
 
 ### Проверка
 ```
@@ -92,52 +161,47 @@ https://api.telegram.org/bot<TOKEN>/sendMessage?chat_id=<CHAT_ID>&text=Тест
 
 ---
 
-## Локальная разработка
+## Деплой на VPS (кратко)
 
-Сайт работает без сервера — откройте `public/index.html` в браузере.
+Полная инструкция — в [DEPLOY.md](DEPLOY.md). Вкратце:
 
-Для тестирования формы (вызов `/api/submit-form`) нужен Vercel CLI:
 ```bash
-npm i -g vercel
-vercel dev
+# на сервере
+git clone <URL_РЕПОЗИТОРИЯ> /var/www/resolute
+cd /var/www/resolute
+npm install --omit=dev
+cp .env.example .env && nano .env        # вписать секреты
+
+pm2 start ecosystem.config.cjs
+pm2 save && pm2 startup
+
+cp deploy/nginx.conf /etc/nginx/sites-available/resolute
+ln -s /etc/nginx/sites-available/resolute /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
 ```
-Это поднимает локальный сервер на `http://localhost:3000` с работающими функциями.
 
----
-
-## Деплой
-
-Проект задеплоен на **Vercel**. Каждый push в `master` → автоматический деплой.
-
-Ручной деплой через CLI:
+### Обновление кода
 ```bash
-vercel --prod
+cd /var/www/resolute
+git pull
+npm install --omit=dev
+pm2 restart resolute
 ```
+
+### SSL
+Когда домен будет направлен на VPS — выпускается бесплатный сертификат Let's Encrypt
+через `certbot --nginx` (подробнее в [DEPLOY.md](DEPLOY.md)).
 
 ---
 
 ## Технологии
 - **HTML5, CSS3, Vanilla JS** — без фреймворков, без сборки
 - **Google Fonts** — Oswald + Raleway
-- **Vercel Serverless Functions** — безопасная отправка токенов на сервере
+- **Node.js + Express** — лёгкий API-сервер
+- **PM2** — менеджер процессов (автозапуск, рестарты)
+- **Nginx** — раздача статики и обратный прокси для `/api/`
 - **Telegram Bot API** — мгновенные уведомления о заявках
 - **Nodemailer** — отправка заявок на корпоративную почту
-
----
-
-## Настройка Email (корпоративная почта)
-
-Когда почта будет готова, добавьте в Vercel Environment Variables:
-
-| Переменная | Пример | Описание |
-|---|---|---|
-| `EMAIL_HOST` | `smtp.mail.ru` | SMTP-сервер провайдера |
-| `EMAIL_PORT` | `587` | Порт (587 = STARTTLS) |
-| `EMAIL_USER` | `info@resolute-club.ru` | Логин/адрес отправителя |
-| `EMAIL_PASS` | `••••••••` | Пароль или app-password |
-| `EMAIL_TO` | `info@resolute-club.ru` | Куда приходят заявки |
-
-Пока переменные не заданы — email молча пропускается, Telegram работает в штатном режиме.
 
 ---
 
@@ -148,12 +212,15 @@ vercel --prod
 
 ---
 
-## Чеклист перед деплоем
-- [ ] Задать `TELEGRAM_BOT_TOKEN` в Vercel Environment Variables
-- [ ] Задать `TELEGRAM_CHAT_ID` в Vercel Environment Variables
-- [ ] Задать `EMAIL_*` переменные когда корпоративная почта будет готова
+## Чеклист перед запуском
+- [ ] Создать `.env` на сервере из `.env.example`
+- [ ] Задать `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID`
+- [ ] Задать `EMAIL_*` переменные, когда корпоративная почта будет готова
+- [ ] Запустить под PM2 (`pm2 start ecosystem.config.cjs`, `pm2 save`)
+- [ ] Настроить Nginx (`deploy/nginx.conf`) и перезагрузить его
 - [ ] Проверить форму: заявка приходит в Telegram
+- [ ] Выпустить SSL-сертификат, когда домен будет привязан
 - [ ] Обновить телефон в `index.html` (футер)
-- [ ] Обновить Telegram-ссылку в `index.html` (`@resolute_cheer` → реальная)
+- [ ] Обновить Telegram-ссылку в `index.html` на реальную
 - [ ] Уточнить расписание в `index.html`
 - [ ] Заменить фото тренеров (`assets/images/coaches/`)
